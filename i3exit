@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+#
+# i3exit is a simple GTK 3 script that allows i3 users
+# to shut down and reboot from within i3 without first
+# logging out and do it from their display manager or
+# from within a shell terminal.
+#
+# The script requires the Perl GTK3 module and that the
+# system is using systemd init to function properly.
+#
+# This software is licensed under The MIT License.
+# Copyright (C) 2019 Daniel Jerverén <daniel@jerveren.se>.
+
+use strict;
+use Gtk3 -init;
+use Glib ('TRUE','FALSE');
+
+# Create new window and dialog.
+my $window = Gtk3::Window->new();
+my $dialog = Gtk3::Dialog->new();
+
+# Set dialog parameters.
+$dialog->set_transient_for($window);
+$dialog->set_default_size (300, 100);
+$dialog->set_title('Hit Esc to dismiss');
+
+# Add buttons to the dialog.
+$dialog->add_button('Shutdown',0);
+$dialog->add_button('Reboot',1);
+$dialog->add_button('Logout',2);
+
+# Connect the 'response' signal to on_response()
+$dialog->signal_connect('response' => \&on_response);
+
+# Create a vertical box to hold icon.
+my $vbox = Gtk3::Box->new('vertical', 8);
+my $icon = Gtk3::Image->new_from_icon_name("video-display", 6);
+$vbox->set_border_width(8);
+$vbox->pack_start($icon, FALSE, FALSE, 0);
+$dialog->get_content_area()->add($vbox);
+
+# Show box and dialog.
+$vbox->show_all();
+$dialog->show_all();
+
+# Enter GTK main loop.
+Gtk3->main();
+
+
+# Process button clicks.
+sub on_response {
+	my ($widget, $response_id) = @_;
+
+	# Special handling if Esc is pressed.
+	exit if ($response_id eq "delete-event"); 
+
+	# Take action according to button clicked.
+	if ($response_id == 0) {
+		system("systemctl poweroff");
+	} elsif ($response_id == 1) {
+		system("systemctl reboot");
+	} elsif ($response_id == 2) {
+		system("i3-msg exit");
+	}
+	
+	exit;
+}
